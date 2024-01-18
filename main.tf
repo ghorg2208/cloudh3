@@ -17,13 +17,13 @@ provider "azurerm" {
 
 # Create a resource group
 resource "azurerm_resource_group" "evalRessourceGroup" {
-  name     = "eval-stan-victor"
+  name     = "eval-terraform-stan-victor"
   location = "West Europe"
 }
 
 # Create a virtual network within the resource group
 resource "azurerm_virtual_network" "evalVirtualNetwork" {
-  name                = "eval-virtual-network"
+  name                = "eval-terraform-virtual-network"
   resource_group_name = azurerm_resource_group.evalRessourceGroup.name
   location            = azurerm_resource_group.evalRessourceGroup.location
   address_space       = ["10.0.0.0/16"]
@@ -41,14 +41,10 @@ resource "azurerm_public_ip" "evalPublicIp" {
   resource_group_name = azurerm_resource_group.evalRessourceGroup.name
   location            = azurerm_resource_group.evalRessourceGroup.location
   allocation_method   = "Dynamic"
-
-  tags = {
-    environment = "Production"
-  }
 }
 
 resource "azurerm_network_interface" "evalNetworkNetwork" {
-  name                = "eval-terraform-network"
+  name                = "eval-terraform-stan-victor-network"
   location            = azurerm_resource_group.evalRessourceGroup.location
   resource_group_name = azurerm_resource_group.evalRessourceGroup.name
 
@@ -61,14 +57,14 @@ resource "azurerm_network_interface" "evalNetworkNetwork" {
 }
 
 resource "azurerm_ssh_public_key" "evalSSH" {
-  name                = "eval-terraform-ssh"
+  name                = "eval-terraform-stan-victor-ssh"
   resource_group_name = azurerm_resource_group.evalRessourceGroup.name
   location            = azurerm_resource_group.evalRessourceGroup.location
   public_key          = file("ssh/ssh_eval.pub")
 }
 
 resource "azurerm_linux_virtual_machine" "evalVM" {
-  name                = "eval-vm"
+  name                = "eval-stan-victor-vm"
   resource_group_name = azurerm_resource_group.evalRessourceGroup.name
   location            = azurerm_resource_group.evalRessourceGroup.location
   size                = "Standard_F2"
@@ -95,39 +91,19 @@ resource "azurerm_linux_virtual_machine" "evalVM" {
   }
 }
 
-resource "azurerm_storage_account" "evalStorageAccount" {
-  name                     = "evalstorageaccount"
-  resource_group_name      = azurerm_resource_group.evalRessourceGroup.name
-  location                 = azurerm_resource_group.evalRessourceGroup.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
+resource "azurerm_mysql_flexible_server" "stanTerraformMysql" {
+  name                   = "eval-mysql-flexible-server"
+  resource_group_name    = azurerm_resource_group.evalRessourceGroup.name
+  location               = azurerm_resource_group.evalRessourceGroup.location
+  administrator_login    = "stanvictor"
+  administrator_password = "Azerty1234"
+  sku_name               = "B_Standard_B1s"
 }
 
-resource "azurerm_mssql_server" "stanTerraformMssql" {
-  name                         = "eval-mssql"
-  resource_group_name          = azurerm_resource_group.evalRessourceGroup.name
-  location                     = azurerm_resource_group.evalRessourceGroup.location
-  version                      = "12.0"
-  administrator_login          = "eval"
-  administrator_login_password = "jdqghkj&y287989zdj"
-}
-
-resource "azurerm_mssql_database" "stanTerraformDB" {
-  name           = "evaldb"
-  server_id      = azurerm_mssql_server.stanTerraformMssql.id
-  collation      = "SQL_Latin1_General_CP1_CI_AS"
-  license_type   = "LicenseIncluded"
-  max_size_gb    = 10
-  read_scale     = false
-  sku_name       = "S0"
-  zone_redundant = false
-
-  tags = {
-    foo = "bar"
-  }
-
-  # prevent the possibility of accidental data loss
-  lifecycle {
-    prevent_destroy = true
-  }
+resource "azurerm_mysql_flexible_database" "evalDB" {
+  name                = "crud"
+  resource_group_name = azurerm_resource_group.evalRessourceGroup.name
+  server_name         = azurerm_mysql_flexible_server.stanTerraformMysql.name
+  charset             = "utf8"
+  collation           = "utf8_unicode_ci"
 }
